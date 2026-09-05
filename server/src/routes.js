@@ -18,12 +18,12 @@ function getNext7Days() {
   return days;
 }
 
-router.get('/slots', (req, res) => {
+router.get('/slots', async (req, res) => {
   const { date } = req.query;
   const days = getNext7Days();
   const dates = date ? [date] : days;
 
-  const booked = db.query("SELECT date, time FROM appointments WHERE status = 'booked'").all();
+  const { rows: booked } = await db.execute("SELECT date, time FROM appointments WHERE status = 'booked'");
   const bookedMap = {};
   for (const b of booked) {
     if (!bookedMap[b.date]) bookedMap[b.date] = new Set();
@@ -43,30 +43,42 @@ router.get('/slots', (req, res) => {
   res.json(result);
 });
 
-router.post('/book', (req, res) => {
+router.post('/book', async (req, res) => {
   const { date, time, name, email } = req.body;
   if (!date || !time || !name || !email) {
     return res.status(400).json({ error: 'All fields required' });
   }
 
-  const existing = db.query("SELECT id FROM appointments WHERE date = ? AND time = ? AND status = 'booked'").get(date, time);
-  if (existing) return res.status(409).json({ error: 'This slot was just taken by someone else' });
+  const { rows: existing } = await db.execute({
+    sql: "SELECT id FROM appointments WHERE date = ?1 AND time = ?2 AND status = 'booked'",
+    args: [date, time],
+  });
+  if (existing.length > 0) return res.status(409).json({ error: 'This slot was just taken by someone else' });
 
-  const result = db.query("INSERT INTO appointments (date, time, client_name, client_email) VALUES (?, ?, ?, ?)").run(date, time, name, email);
-  res.json({ id: result.lastInsertRowid, message: 'Booked!' });
+  const result = await db.execute({
+    sql: "INSERT INTO appointments (date, time, client_name, client_email) VALUES (?1, ?2, ?3, ?4)",
+    args: [date, time, name, email],
+  });
+  res.json({ id: Number(result.lastInsertRowid), message: 'Booked!' });
 });
 
-router.get('/appointments', (req, res) => {
+router.get('/appointments', async (req, res) => {
   const { email } = req.query;
   if (!email) return res.status(400).json({ error: 'Email required' });
-  const appointments = db.query("SELECT * FROM appointments WHERE client_email = ? ORDER BY date DESC, time DESC").all(email);
-  res.json(appointments);
+  const { rows } = await db.execute({
+    sql: "SELECT * FROM appointments WHERE client_email = ?1 ORDER BY date DESC, time DESC",
+    args: [email],
+  });
+  res.json(rows);
 });
 
-router.delete('/appointments/:id', (req, res) => {
+router.delete('/appointments/:id', async (req, res) => {
   const { id } = req.params;
-  const result = db.query("UPDATE appointments SET status = 'cancelled' WHERE id = ? AND status = 'booked'").run(id);
-  if (result.changes === 0) {
+  const result = await db.execute({
+    sql: "UPDATE appointments SET status = 'cancelled' WHERE id = ?1 AND status = 'booked'",
+    args: [id],
+  });
+  if (result.rowsAffected === 0) {
     return res.status(404).json({ error: 'Not found or already cancelled' });
   }
   res.json({ message: 'Cancelled' });

@@ -1,14 +1,11 @@
-import { Database } from 'bun:sqlite';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { createClient } from '@libsql/client';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const db = new Database(join(__dirname, '..', 'appointments.db'));
+const db = createClient({
+  url: process.env.TURSO_DATABASE_URL || 'file:../appointments.db',
+  authToken: process.env.TURSO_AUTH_TOKEN || undefined,
+});
 
-db.run('PRAGMA journal_mode = WAL');
-db.run('PRAGMA foreign_keys = ON');
-
-db.run(`
+await db.execute(`
   CREATE TABLE IF NOT EXISTS appointments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     date TEXT NOT NULL,

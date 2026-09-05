@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: appointment-app
+    runtime: bun
+    buildCommand: cd client && bun install && bun run build && cd ../server && bun install
+    startCommand: cd server && bun src/index.js
+    envVars:
+      - key: TURSO_DATABASE_URL
+        sync: false
+      - key: TURSO_AUTH_TOKEN
+        sync: false
