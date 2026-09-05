@@ -1,0 +1,11 @@
+{
+  "name": "appointment",
+  "scripts": {
+    "dev": "concurrently \"bun run dev:server\" \"bun run dev:client\"",
+    "dev:server": "bun run --watch server/src/index.js",
+    "dev:client": "bun run --cwd client dev"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
