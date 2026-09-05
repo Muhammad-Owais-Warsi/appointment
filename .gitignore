@@ -25,9 +25,9 @@ Thumbs.db
 bun.lock
 
 # server data
-server/*.db
-server/*.db-shm
-server/*.db-wal
+*.db
+*.db-shm
+*.db-wal
 
 # logs
 *.log
