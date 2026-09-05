@@ -1,9 +1,10 @@
 services:
   - type: web
     name: appointment-app
-    runtime: bun
-    buildCommand: cd client && bun install && bun run build && cd ../server && bun install
-    startCommand: cd server && bun src/index.js
+    runtime: node
+    plan: free
+    buildCommand: cd client && npm install && npm run build && cd ../server && npm install
+    startCommand: cd server && node src/index.js
     envVars:
       - key: TURSO_DATABASE_URL
         sync: false
